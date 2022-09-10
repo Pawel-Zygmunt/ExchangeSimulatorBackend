@@ -1,6 +1,8 @@
-﻿using ExchangeSimulatorBackend.Dtos;
+﻿using AutoMapper;
+using ExchangeSimulatorBackend.Dtos;
 using ExchangeSimulatorBackend.Entities;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -12,7 +14,7 @@ namespace ExchangeSimulatorBackend.Services
     {
         public Task<IdentityResult> Register(RegisterUserDto dto);
         public Task<string> GenerateJwt(LoginUserDto dto);
-        public Task<AppUser> GetUser(string email);
+        public Task<UserDto> GetUserByEmail(string email);
     }
 
 
@@ -20,11 +22,15 @@ namespace ExchangeSimulatorBackend.Services
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly AuthenticationSettings _authenticationSettings;
+        private readonly AppDbContext _dbContext;
+        private readonly IMapper _mapper;
 
-        public AuthService(UserManager<AppUser> userManager, AuthenticationSettings authenticationSettings)
+        public AuthService(UserManager<AppUser> userManager, AuthenticationSettings authenticationSettings, AppDbContext dbContext, IMapper mapper)
         {
             _userManager = userManager;
             _authenticationSettings = authenticationSettings;
+            _dbContext = dbContext;
+            _mapper = mapper;
         }
 
         public async Task<IdentityResult> Register(RegisterUserDto dto)
@@ -82,17 +88,18 @@ namespace ExchangeSimulatorBackend.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
     
-        public async Task<AppUser> GetUser(string email)
+        public async Task<UserDto> GetUserByEmail(string email)
         {
-            
-            var user = await _userManager.FindByEmailAsync(email);
-
+            var user = await _dbContext.Users
+                         .Include(u=>u.Transactions)
+                         .FirstOrDefaultAsync(u => u.Email == email);
+                         
             if (user is null)
             {
                 throw new BadHttpRequestException("Invalid username or password");
             }
 
-            return user;
+            return _mapper.Map<UserDto>(user);
         }
     
     }

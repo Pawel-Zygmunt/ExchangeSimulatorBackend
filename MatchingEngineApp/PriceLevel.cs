@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MatchingEngineApp
 {
-    internal class PriceLevel
+    public class PriceLevel
     {
         private readonly List<LimitOrder> _orders;
 

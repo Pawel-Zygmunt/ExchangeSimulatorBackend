@@ -31,11 +31,11 @@ namespace ExchangeSimulatorBackend.Controllers
         public async Task<ActionResult<UserDto>> LoginUser([FromBody] LoginUserDto dto)
         {
             var token = await _authService.GenerateJwt(dto);
-            var appUser = await _authService.GetUser(dto.Email);
+            var userDto = await _authService.GetUserByEmail(dto.Email);
 
             Response.Cookies.Append("X-Access-Token", token, new CookieOptions() { HttpOnly = true, Secure = true, SameSite = SameSiteMode.None });
 
-            return Ok(new UserDto { Email = appUser.Email, AccountBalance = appUser.AccountBalance});
+            return Ok(userDto);
         }
 
         [Authorize]
@@ -51,8 +51,8 @@ namespace ExchangeSimulatorBackend.Controllers
         [HttpGet("user")]
         public async Task<ActionResult<UserDto>> GetUser()
         {
-            var appUser = await _authService.GetUser(_userContextService.GetUserEmail!);
-            return Ok(new UserDto { Email = appUser.Email, AccountBalance = appUser.AccountBalance });
+            var userDto = await _authService.GetUserByEmail(_userContextService.GetUserEmail!);
+            return Ok(userDto);
         }
     }
 }

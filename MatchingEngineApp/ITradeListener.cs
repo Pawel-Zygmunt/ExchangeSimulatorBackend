@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MatchingEngineApp.Dtos;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,20 +7,15 @@ using System.Threading.Tasks;
 
 namespace MatchingEngineApp
 {
-    public class PriceLevelSideOrder
-    {
-        public Guid UserId { get; set; }
-        public uint Quantity { get; set; }
-    }
+   
 
     public interface ITradeListener
     {
         void OnRemovePriceLevelSide(double price, bool isBidSide);
-        void OnChangePriceLevelSide(double price, bool isBidSide, IEnumerable<PriceLevelSideOrder> orders);
-        void OnCurrentPriceChanged(double currentPrice);
+        void OnPriceLevelSideChange(double price, bool isBidSide, IEnumerable<PriceLevelSideOrder> orders);
+        void OnCurrentPriceChange(double currentPrice);
 
-
-        void OnAccept(Guid orderId);
+        void OnAccept(Order order);
         void OnTrade(Guid incomingOrderUserId, Guid incomingOrderId, Guid restingOrderUserId, Guid restingOrderId, double matchPrice, uint matchQuantity);
         void OnCancel(Guid orderUserId, Guid orderId, OrderCancelReason orderCancelReason);
 

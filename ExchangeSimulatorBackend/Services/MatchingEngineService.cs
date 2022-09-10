@@ -1,6 +1,7 @@
 ﻿using ExchangeSimulatorBackend.Entities;
 using ExchangeSimulatorBackend.HubConfig;
 using MatchingEngineApp;
+using MatchingEngineApp.Dtos;
 using Microsoft.AspNetCore.SignalR;
 
 namespace ExchangeSimulatorBackend.Services
@@ -10,6 +11,8 @@ namespace ExchangeSimulatorBackend.Services
         private MatchingEngine MatchingEngine { get; set; }
 
         public void AddOrder(Order order) => MatchingEngine.AddOrder(order);
+
+        public OrderBookDto GetOrderBook() => MatchingEngine.GetOrderBook();
 
         public MatchingEngineService(IServiceProvider services)
         {            
@@ -35,8 +38,8 @@ namespace ExchangeSimulatorBackend.Services
                     {
                         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                         var userContextService = scope.ServiceProvider.GetRequiredService<IUserContextService>();
-                        var matchingEngineHubContext = scope.ServiceProvider.GetRequiredService<IHubContext<MatchingEngineHub>>();
-                        await engineAction(dbContext, userContextService, matchingEngineHubContext);
+                        var matchingEngineHub = scope.ServiceProvider.GetRequiredService<IHubContext<MatchingEngineHub>>();
+                        await engineAction(dbContext, userContextService, matchingEngineHub);
                     }
                 }
                 finally
@@ -45,11 +48,15 @@ namespace ExchangeSimulatorBackend.Services
                 }
             }
 
-            public void OnAccept(Guid orderId)
+            public void OnAccept(Order order)
             {
                 LockedScopeProvider(async (dbContext, userContextService, matchingEngineHub) =>
                 {
-                    Console.Write($"OnAccept");
+                    if(order is LimitOrder)
+                    {
+                        var message = $"OnAccept - Zlecenie z limitem typu {order.Type}, ilość: {order.InitialQuantity}, cena: {(order as LimitOrder)!.Price} zaakceptowane";
+                        await matchingEngineHub.Clients.User(order.UserId.ToString()).SendAsync("onOrderAccepted", message);
+                    }
                 });
             }
 
@@ -61,19 +68,20 @@ namespace ExchangeSimulatorBackend.Services
                 });
             }
 
-            public void OnChangePriceLevelSide(double price, bool isBidSide, IEnumerable<PriceLevelSideOrder> orders)
+            public void OnPriceLevelSideChange(double price, bool isBidSide, IEnumerable<PriceLevelSideOrder> orders)
             {
                 LockedScopeProvider(async (dbContext, userContextService, matchingEngineHub) =>
                 {
+                    await matchingEngineHub.Clients.All.SendAsync("onPriceLevelSideChange", price, isBidSide, orders, orders.Sum(o=>o.Quantity));
                     Console.Write($"OnChangePriceLevelSide");
                 });
             }
 
-            public void OnCurrentPriceChanged(double currentPrice)
+            public void OnCurrentPriceChange(double currentPrice)
             {
                 LockedScopeProvider(async (dbContext, userContextService, matchingEngineHub) =>
                 {
-                    Console.Write($"CurrentPriceChanged: ${currentPrice}");
+                    await matchingEngineHub.Clients.All.SendAsync("onCurrentPriceChange", currentPrice);
                 });
             }
 
@@ -81,7 +89,7 @@ namespace ExchangeSimulatorBackend.Services
             {
                 LockedScopeProvider(async (dbContext, userContextService, matchingEngineHub) =>
                 {
-                    Console.Write($"OnRemovePriceLevelSide");
+                    await matchingEngineHub.Clients.All.SendAsync("onRemovePriceLevel", price, isBidSide);
                 });
             }
 

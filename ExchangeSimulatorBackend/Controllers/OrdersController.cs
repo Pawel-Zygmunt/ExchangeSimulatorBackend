@@ -14,32 +14,31 @@ namespace ExchangeSimulatorBackend.Controllers
     [ApiController]
     public class OrdersController : ControllerBase
     {
-        private readonly IHubContext<MatchingEngineHub> _hub;
+        
         private readonly MatchingEngineService _matchingEngineService;
+        private readonly IUserContextService _userContextService;
 
-        public OrdersController(IHubContext<MatchingEngineHub> hub, MatchingEngineService matchingEngineService)
+        public OrdersController(MatchingEngineService matchingEngineService, IUserContextService userContextService)
         {
-            _hub = hub;
             _matchingEngineService = matchingEngineService;
+            _userContextService = userContextService;
         }
 
-
-        //[HttpGet]
-        //public IActionResult GetPriceLevels()
-        //{
-            
-        //}
+        [HttpGet("orderbook")]
+        public IActionResult GetOrderBook() => Ok(_matchingEngineService.GetOrderBook());
 
         [HttpPost]
         public IActionResult AddOrder([FromBody] AddOrderDto addOrderDto)
         {
+            var userId = (Guid)_userContextService.GetUserId!;
+
             if (addOrderDto.OrderType == Dtos.OrderType.MarketOrder)
             {
-                _matchingEngineService.AddOrder(new MarketOrder(Guid.NewGuid(), (uint)addOrderDto.Quantity, (MatchingEngineApp.OrderType)addOrderDto.OrderSide!));
+                _matchingEngineService.AddOrder(new MarketOrder(userId, (uint)addOrderDto.Quantity, (MatchingEngineApp.OrderType)addOrderDto.OrderSide!));
             }
             else if (addOrderDto.OrderType == Dtos.OrderType.LimitOrder)
             {
-                _matchingEngineService.AddOrder(new LimitOrder(Guid.NewGuid(), (uint)addOrderDto.Quantity, addOrderDto.Price, (MatchingEngineApp.OrderType)addOrderDto.OrderSide!));
+                _matchingEngineService.AddOrder(new LimitOrder(userId, (uint)addOrderDto.Quantity, addOrderDto.Price, (MatchingEngineApp.OrderType)addOrderDto.OrderSide!));
             }
 
             return Ok();

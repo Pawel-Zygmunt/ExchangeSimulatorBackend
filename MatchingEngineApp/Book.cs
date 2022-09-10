@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MatchingEngineApp.Dtos;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -33,13 +34,20 @@ namespace MatchingEngineApp
         {
             var side = isBidSide ? _bidSide : _askSide;
 
-            var value = side.GetValueOrDefault(price);
+            if(side.TryGetValue(price, out var level))
+            {
+                return level;
+            }
 
-            if (value == default)
-                throw new InvalidOperationException("GetPriceLevel - no priceLevel found");
-
-            return value;
+            throw new InvalidOperationException("GetPriceLevel - no level found");
         }
+
+        public OrderBookDto GetAllPriceLevels() => new OrderBookDto()
+        {
+            bidSide = _bidSide.ToDictionary(keySelector: k => k.Key, elementSelector: v => _tradeListener.MapLimitOrders(v.Value.GetOrders())),
+            askSide = _askSide.ToDictionary(keySelector: k => k.Key, elementSelector: v => _tradeListener.MapLimitOrders(v.Value.GetOrders())),
+        };
+      
 
         public LimitOrder? GetBestOrderForSide(OrderType orderType)
         {
@@ -64,7 +72,7 @@ namespace MatchingEngineApp
             {
                 PriceLevel priceLevel = GetOrAddPriceLevel(order.Price, _bidSide);
                 priceLevel.AddOrder(order);
-                _tradeListener.OnChangePriceLevelSide(order.Price, true, _tradeListener.MapLimitOrders(priceLevel.GetOrders()));
+                _tradeListener.OnPriceLevelSideChange(order.Price, true, _tradeListener.MapLimitOrders(priceLevel.GetOrders()));
 
                 if (_bestBidPriceLevel == null || order.Price > _bestBidPriceLevel.Price)
                 {
@@ -75,7 +83,7 @@ namespace MatchingEngineApp
             {
                 PriceLevel priceLevel = GetOrAddPriceLevel(order.Price, _askSide);
                 priceLevel.AddOrder(order);
-                _tradeListener.OnChangePriceLevelSide(order.Price, false, _tradeListener.MapLimitOrders(priceLevel.GetOrders()));
+                _tradeListener.OnPriceLevelSideChange(order.Price, false, _tradeListener.MapLimitOrders(priceLevel.GetOrders()));
 
                 if (_bestAskPriceLevel == null || order.Price < _bestAskPriceLevel.Price)
                 {
@@ -101,7 +109,7 @@ namespace MatchingEngineApp
                     return;
                 }
 
-                _tradeListener.OnChangePriceLevelSide(order.Price, order.Type == OrderType.BUY, _tradeListener.MapLimitOrders(priceLevel.GetOrders()));
+                _tradeListener.OnPriceLevelSideChange(order.Price, order.Type == OrderType.BUY, _tradeListener.MapLimitOrders(priceLevel.GetOrders()));
             }
         }
 

@@ -1,5 +1,6 @@
 ﻿
 using MatchingEngineApp;
+using MatchingEngineApp.Dtos;
 
 class MyTradeListener : ITradeListener
 {
@@ -22,7 +23,7 @@ class MyTradeListener : ITradeListener
     //{
     //    Console.WriteLine($"Order matched.... incomingOrderId: {incomingOrderId}, restingOrderId: {restingOrderId}, executedQuantity: {matchQuantity}, Price: {matchPrice}");
     //}
-    public void OnAccept(Guid orderId)
+    public void OnAccept(Order order)
     {
         Console.WriteLine("OnAccept");
     }
@@ -32,12 +33,12 @@ class MyTradeListener : ITradeListener
         Console.WriteLine("OnCancel");
     }
 
-    public void OnChangePriceLevelSide(double Price, bool isAskSide, IEnumerable<PriceLevelSideOrder> orders)
+    public void OnPriceLevelSideChange(double Price, bool isAskSide, IEnumerable<PriceLevelSideOrder> orders)
     {
         Console.WriteLine("OnChangePriceLevelSide");
     }
 
-    public void OnCurrentPriceChanged(double currentPrice)
+    public void OnCurrentPriceChange(double currentPrice)
     {
         Console.WriteLine("OnCurrentPriceChanged");
     }

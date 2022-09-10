@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MatchingEngineApp.Dtos;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,8 +16,10 @@ namespace MatchingEngineApp
         private void SetMarketPrice(double price)
         {
             MarketPrice = price;
-            _tradeListener.OnCurrentPriceChanged(MarketPrice);
+            _tradeListener.OnCurrentPriceChange(MarketPrice);
         }
+
+        public OrderBookDto GetOrderBook() => _book.GetAllPriceLevels();
 
         public MatchingEngine(ITradeListener tradeListener)
         {
@@ -27,7 +30,7 @@ namespace MatchingEngineApp
 
         public void AddOrder(Order order)
         {
-            _tradeListener.OnAccept(order.OrderId);
+            _tradeListener.OnAccept(order);
 
             if (order is MarketOrder)
             {
@@ -71,7 +74,7 @@ namespace MatchingEngineApp
                     return;
                 }
 
-                _tradeListener.OnChangePriceLevelSide(resting.Price, resting.Type == OrderType.BUY, _tradeListener.MapLimitOrders(_book.GetPriceLevel(resting.Price,resting.Type == OrderType.BUY).GetOrders())); 
+                _tradeListener.OnPriceLevelSideChange(resting.Price, resting.Type == OrderType.BUY, _tradeListener.MapLimitOrders(_book.GetPriceLevel(resting.Price,resting.Type == OrderType.BUY).GetOrders())); 
             }
 
             double PercentageDifferenceBetweenMarketPriceAndRestingOrder(double restingOrderPrice)
