@@ -15,11 +15,12 @@ namespace MatchingEngineApp
 
         private void SetMarketPrice(double price)
         {
+            if (price == MarketPrice) return;
             MarketPrice = price;
             _tradeListener.OnCurrentPriceChange(MarketPrice);
         }
 
-        public OrderBookDto GetOrderBook() => _book.GetAllPriceLevels();
+        public Dictionary<double, OrderBookLevel> GetOrderBook() => _book.GetAllPriceLevels();
 
         public MatchingEngine(ITradeListener tradeListener)
         {
@@ -92,11 +93,14 @@ namespace MatchingEngineApp
 
                 if (incomingOrder is LimitOrder)
                 {
-                    if (incomingOrder.Type == OrderType.BUY && restingOrder.Price <= (incomingOrder as LimitOrder)!.Price)
-                        TryFillOrder(incomingOrder, restingOrder);
+                    var firstCond = incomingOrder.Type == OrderType.BUY && restingOrder.Price <= (incomingOrder as LimitOrder)!.Price;
+                    var secondCond = incomingOrder.Type == OrderType.SELL && restingOrder.Price >= (incomingOrder as LimitOrder)!.Price;
 
-                    if (incomingOrder.Type == OrderType.SELL && restingOrder.Price >= (incomingOrder as LimitOrder)!.Price)
+                    if (firstCond || secondCond)
                         TryFillOrder(incomingOrder, restingOrder);
+                    else
+                        break;
+                    
                 }
                 else
                 {

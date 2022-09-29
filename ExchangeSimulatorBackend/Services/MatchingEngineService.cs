@@ -12,7 +12,7 @@ namespace ExchangeSimulatorBackend.Services
 
         public void AddOrder(Order order) => MatchingEngine.AddOrder(order);
 
-        public OrderBookDto GetOrderBook() => MatchingEngine.GetOrderBook();
+        public Dictionary<double, OrderBookLevel> GetOrderBook() => MatchingEngine.GetOrderBook();
 
         public MatchingEngineService(IServiceProvider services)
         {            
@@ -29,7 +29,8 @@ namespace ExchangeSimulatorBackend.Services
                 _services = services;
             }
 
-            private async void LockedScopeProvider(Func<AppDbContext, IUserContextService, IHubContext<MatchingEngineHub>, Task> engineAction)
+            private async void LockedScopeProvider(Func<AppDbContext, IUserContextService,
+                                                   IHubContext<MatchingEngineHub>, Task> engineAction)
             {
                 await _semaphore.WaitAsync();
                 try
@@ -64,6 +65,7 @@ namespace ExchangeSimulatorBackend.Services
             {
                 LockedScopeProvider(async (dbContext, userContextService, matchingEngineHub) =>
                 {
+                    await matchingEngineHub.Clients.User(orderUserId.ToString()).SendAsync("onCancel", orderCancelReason.ToString());
                     Console.Write($"OnCancel");
                 });
             }
@@ -82,6 +84,7 @@ namespace ExchangeSimulatorBackend.Services
                 LockedScopeProvider(async (dbContext, userContextService, matchingEngineHub) =>
                 {
                     await matchingEngineHub.Clients.All.SendAsync("onCurrentPriceChange", currentPrice);
+                    Console.Write($"OnCurrentPriceChange");
                 });
             }
 
@@ -90,6 +93,7 @@ namespace ExchangeSimulatorBackend.Services
                 LockedScopeProvider(async (dbContext, userContextService, matchingEngineHub) =>
                 {
                     await matchingEngineHub.Clients.All.SendAsync("onRemovePriceLevel", price, isBidSide);
+                    Console.Write($"OnRemovePriceLevelSide");
                 });
             }
 

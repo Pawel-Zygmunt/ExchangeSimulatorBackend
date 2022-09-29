@@ -2,6 +2,7 @@
 using ExchangeSimulatorBackend.HubConfig;
 using ExchangeSimulatorBackend.Services;
 using MatchingEngineApp;
+using MatchingEngineApp.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -25,7 +26,7 @@ namespace ExchangeSimulatorBackend.Controllers
         }
 
         [HttpGet("orderbook")]
-        public IActionResult GetOrderBook() => Ok(_matchingEngineService.GetOrderBook());
+        public ActionResult<Dictionary<double, OrderBookLevel>> GetOrderBook() => Ok(_matchingEngineService.GetOrderBook());
 
         [HttpPost]
         public IActionResult AddOrder([FromBody] AddOrderDto addOrderDto)
@@ -34,11 +35,16 @@ namespace ExchangeSimulatorBackend.Controllers
 
             if (addOrderDto.OrderType == Dtos.OrderType.MarketOrder)
             {
-                _matchingEngineService.AddOrder(new MarketOrder(userId, (uint)addOrderDto.Quantity, (MatchingEngineApp.OrderType)addOrderDto.OrderSide!));
+                _matchingEngineService.AddOrder(new MarketOrder(userId,
+                                                (uint)addOrderDto.Quantity,
+                                                (MatchingEngineApp.OrderType)addOrderDto.OrderSide!));
             }
             else if (addOrderDto.OrderType == Dtos.OrderType.LimitOrder)
             {
-                _matchingEngineService.AddOrder(new LimitOrder(userId, (uint)addOrderDto.Quantity, addOrderDto.Price, (MatchingEngineApp.OrderType)addOrderDto.OrderSide!));
+                _matchingEngineService.AddOrder(new LimitOrder(userId,
+                                                (uint)addOrderDto.Quantity,
+                                                addOrderDto.Price,
+                                                (MatchingEngineApp.OrderType)addOrderDto.OrderSide!));
             }
 
             return Ok();

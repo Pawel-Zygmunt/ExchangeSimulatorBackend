@@ -34,7 +34,7 @@ namespace MatchingEngineApp
         {
             var side = isBidSide ? _bidSide : _askSide;
 
-            if(side.TryGetValue(price, out var level))
+            if (side.TryGetValue(price, out var level))
             {
                 return level;
             }
@@ -42,12 +42,39 @@ namespace MatchingEngineApp
             throw new InvalidOperationException("GetPriceLevel - no level found");
         }
 
-        public OrderBookDto GetAllPriceLevels() => new OrderBookDto()
+        public Dictionary<double, OrderBookLevel> GetAllPriceLevels()
         {
-            bidSide = _bidSide.ToDictionary(keySelector: k => k.Key, elementSelector: v => _tradeListener.MapLimitOrders(v.Value.GetOrders())),
-            askSide = _askSide.ToDictionary(keySelector: k => k.Key, elementSelector: v => _tradeListener.MapLimitOrders(v.Value.GetOrders())),
-        };
-      
+            var keys = new HashSet<double>(_bidSide.Keys);
+            keys.UnionWith(_askSide.Keys);
+
+            return keys.Select((k) =>
+            {
+                var orderBookBidSide = new OrderBookSide();
+                var orderBookAskSide = new OrderBookSide();
+
+                if (_bidSide.TryGetValue(k, out var level))
+                {
+                    var sideOrders = _tradeListener.MapLimitOrders(level.GetOrders());
+                    orderBookBidSide.Orders = sideOrders;
+                    orderBookBidSide.Quantity = (int)sideOrders.Sum(o => o.Quantity);
+                }
+
+                if (_askSide.TryGetValue(k, out var asklevel))
+                {
+                    var sideOrders = _tradeListener.MapLimitOrders(asklevel.GetOrders());
+                    orderBookAskSide.Orders = sideOrders;
+                    orderBookAskSide.Quantity = (int)sideOrders.Sum(o => o.Quantity);
+                }
+
+                var orderBookLevel = new OrderBookLevel()
+                {
+                    AskSide = orderBookAskSide,
+                    BidSide = orderBookBidSide,
+                };
+
+                return new KeyValuePair<double, OrderBookLevel>(k, orderBookLevel);
+            }).ToDictionary(keySelector: k => k.Key, elementSelector: k => k.Value);   
+        }
 
         public LimitOrder? GetBestOrderForSide(OrderType orderType)
         {

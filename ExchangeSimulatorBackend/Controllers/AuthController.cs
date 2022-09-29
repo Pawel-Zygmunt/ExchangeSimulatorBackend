@@ -33,7 +33,8 @@ namespace ExchangeSimulatorBackend.Controllers
             var token = await _authService.GenerateJwt(dto);
             var userDto = await _authService.GetUserByEmail(dto.Email);
 
-            Response.Cookies.Append("X-Access-Token", token, new CookieOptions() { HttpOnly = true, Secure = true, SameSite = SameSiteMode.None });
+            Response.Cookies.Append("X-Access-Token", token, new CookieOptions()
+                                    { HttpOnly = true, Secure = true, SameSite = SameSiteMode.None });
 
             return Ok(userDto);
         }
